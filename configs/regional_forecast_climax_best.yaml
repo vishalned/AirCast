@@ -1,0 +1,368 @@
+seed_everything: 104
+
+# ---------------------------- TRAINER -------------------------------------------
+trainer:
+  default_root_dir: ${oc.env:OUTPUT_DIR,/lustre/scratch/WUR/AIN/nedun001/climaX-air-pollution/regional_forecast/seed_104}
+
+  precision: 32
+  
+
+  gpus: null
+  num_nodes: 1
+  accelerator: gpu
+  strategy: ddp
+
+  min_epochs: 1
+  max_epochs: 100
+  enable_progress_bar: true
+
+  sync_batchnorm: True
+  enable_checkpointing: True
+  resume_from_checkpoint: null
+
+  # debugging
+  fast_dev_run: false
+
+  logger:
+    class_path: pytorch_lightning.loggers.tensorboard.TensorBoardLogger
+    init_args:
+      save_dir: ${trainer.default_root_dir}/logs
+      name: null
+      version: null
+      log_graph: False
+      default_hp_metric: True
+      prefix: ""
+
+  callbacks:
+    - class_path: pytorch_lightning.callbacks.LearningRateMonitor
+      init_args:
+        logging_interval: "step"
+
+    - class_path: pytorch_lightning.callbacks.ModelCheckpoint
+      init_args:
+        dirpath: "${trainer.default_root_dir}/checkpoints"
+        monitor: "val/w_fmae" # name of the logged metric which determines when model is improving
+        mode: "min" # "max" means higher metric value is better, can be also "min"
+        save_top_k: 1 # save k best models (determined by above metric)
+        save_last: True # additionaly always save model from last epoch
+        verbose: False
+        filename: "epoch_{epoch:03d}"
+        auto_insert_metric_name: False
+
+    - class_path: pytorch_lightning.callbacks.EarlyStopping
+      init_args:
+        monitor: "val/w_fmae" # name of the logged metric which determines when model is improving
+        mode: "min" # "max" means higher metric value is better, can be also "min"
+        patience: 5 # how many validation epochs of not improving until training stops
+        min_delta: 0. # minimum change in the monitored metric needed to qualify as an improvement
+
+    - class_path: pytorch_lightning.callbacks.RichModelSummary
+      init_args:
+        max_depth: -1
+
+    - class_path: pytorch_lightning.callbacks.RichProgressBar
+      init_args:
+        leave: True # keep progress bar after training is finished
+
+# ---------------------------- MODEL -------------------------------------------
+model:
+  lr: 5e-4
+  beta_1: 0.9
+  beta_2: 0.99
+  weight_decay: 1e-5
+  warmup_epochs: 10000
+  max_epochs: 100000
+  warmup_start_lr: 1e-8
+  eta_min: 1e-8
+  pretrained_path: "https://huggingface.co/tungnd/climax/resolve/main/5.625deg.ckpt"
+
+  # --- lora parameters ---
+  peft_lora: False
+  peft_method: "lora"
+  r: 8 # lora rank
+  target_modules: ".*\\.attn.qkv" # regex for all attention query linear modules
+  modules_to_save: ["head_weather","head_chem"]
+
+  # -- multi step rollout parameters --
+  multi_step_rollout: False
+  k: 1 # number of steps to rollout
+
+  # -- loss method --
+  loss_method: "freq_lat_weighted_mae"
+  # loss_method: "auxillary_loss"
+
+  # -- visualize predictions --
+  visualize_pred: False
+  visualize_period: ['2017-oct-27', '2017-nov-3'] # from date & to date 
+  # visualize_period: ['2017-jan-1', '2017-jan-3'] 
+ 
+
+  net:
+    class_path: climax.regional_forecast.arch.RegionalClimaX
+    init_args:
+      default_vars: [
+        "2m_temperature",
+        "10m_u_component_of_wind",
+        "10m_v_component_of_wind",
+        # "geopotential_500",
+        # "geopotential_600",
+        # "geopotential_700",
+        # "geopotential_850",
+        "geopotential_925",
+        # "u_component_of_wind_50",
+        # "u_component_of_wind_250",
+        # "u_component_of_wind_500",
+        # "u_component_of_wind_600",
+        # "u_component_of_wind_700",
+        # "u_component_of_wind_850",
+        "u_component_of_wind_925",
+        # "v_component_of_wind_50",
+        # "v_component_of_wind_250",
+        # "v_component_of_wind_500",
+        # "v_component_of_wind_600",
+        # "v_component_of_wind_700",
+        # "v_component_of_wind_850",
+        "v_component_of_wind_925",
+        # "temperature_50",
+        # "temperature_250",
+        # "temperature_500",
+        # "temperature_600",
+        # "temperature_700",
+        # "temperature_850",
+        "temperature_925",
+        # "specific_humidity_50",
+        # "specific_humidity_250",
+        # "specific_humidity_500",
+        # "specific_humidity_600",
+        # "specific_humidity_700",
+        # "specific_humidity_850",
+        "specific_humidity_925",
+        # "co_50",
+        # "co_250",
+        # "co_500",
+        # "co_600",
+        # "co_700",
+        # "co_850",
+        "co_925",
+        # "go3_50",
+        # "go3_250",
+        # "go3_500",
+        # "go3_600",
+        # "go3_700",
+        # "go3_850",
+        "go3_925",
+        # "no_50",
+        # "no_250",
+        # "no_500",
+        # "no_600",
+        # "no_700",
+        # "no_850",
+        "no_925",
+        # "no2_50",
+        # "no2_250",
+        # "no2_500",
+        # "no2_600",
+        # "no2_700",
+        # "no2_850",
+        "no2_925",
+        # "so2_50",
+        # "so2_250",
+        # "so2_500",
+        # "so2_600",
+        # "so2_700",
+        # "so2_850",
+        "so2_925",      
+        "pm1",
+        "pm10",
+        "pm2p5",
+        "tcco",
+        "tc_no",
+        "tcno2",
+        "tcso2",
+        ]
+      img_size: [32, 64]
+      patch_size: 2 
+      embed_dim: 1024 # 1024
+      depth: 8 #8
+      decoder_depth: 2 #2
+      num_heads: 32 #16
+      mlp_ratio: 4
+      drop_path: 0.1
+      drop_rate: 0.1
+      contrastive_loss: False
+
+# ---------------------------- DATA -------------------------------------------
+data:
+  root_dir: ../data/5.625deg_1hr/
+  variables: [
+        "2m_temperature",
+        "10m_u_component_of_wind",
+        "10m_v_component_of_wind",
+        # "geopotential_500",
+        # "geopotential_600",
+        # "geopotential_700",
+        # "geopotential_850",
+        "geopotential_925",
+        # "u_component_of_wind_50",
+        # "u_component_of_wind_250",
+        # "u_component_of_wind_500",
+        # "u_component_of_wind_600",
+        # "u_component_of_wind_700",
+        # "u_component_of_wind_850",
+        "u_component_of_wind_925",
+        # "v_component_of_wind_50",
+        # "v_component_of_wind_250",
+        # "v_component_of_wind_500",
+        # "v_component_of_wind_600",
+        # "v_component_of_wind_700",
+        # "v_component_of_wind_850",
+        "v_component_of_wind_925",
+        # "temperature_50",
+        # "temperature_250",
+        # "temperature_500",
+        # "temperature_600",
+        # "temperature_700",
+        # "temperature_850",
+        "temperature_925",
+        # "specific_humidity_50",
+        # "specific_humidity_250",
+        # "specific_humidity_500",
+        # "specific_humidity_600",
+        # "specific_humidity_700",
+        # "specific_humidity_850",
+        "specific_humidity_925",
+        # "co_50",
+        # "co_250",
+        # "co_500",
+        # "co_600",
+        # "co_700",
+        # "co_850",
+        "co_925",
+        # "go3_50",
+        # "go3_250",
+        # "go3_500",
+        # "go3_600",
+        # "go3_700",
+        # "go3_850",
+        "go3_925",
+        # "no_50",
+        # "no_250",
+        # "no_500",
+        # "no_600",
+        # "no_700",
+        # "no_850",
+        "no_925",
+        # "no2_50",
+        # "no2_250",
+        # "no2_500",
+        # "no2_600",
+        # "no2_700",
+        # "no2_850",
+        "no2_925",
+        # "so2_50",
+        # "so2_250",
+        # "so2_500",
+        # "so2_600",
+        # "so2_700",
+        # "so2_850",
+        "so2_925",      
+        "pm1",
+        "pm10",
+        "pm2p5",
+        "tcco",
+        "tc_no",
+        "tcno2",
+        "tcso2",
+    ]
+  out_variables: [
+        "2m_temperature",
+        "10m_u_component_of_wind",
+        "10m_v_component_of_wind",
+        # "geopotential_500",
+        # "geopotential_600",
+        # "geopotential_700",
+        # "geopotential_850",
+        "geopotential_925",
+        # "u_component_of_wind_50",
+        # "u_component_of_wind_250",
+        # "u_component_of_wind_500",
+        # "u_component_of_wind_600",
+        # "u_component_of_wind_700",
+        # "u_component_of_wind_850",
+        "u_component_of_wind_925",
+        # "v_component_of_wind_50",
+        # "v_component_of_wind_250",
+        # "v_component_of_wind_500",
+        # "v_component_of_wind_600",
+        # "v_component_of_wind_700",
+        # "v_component_of_wind_850",
+        "v_component_of_wind_925",
+        # "temperature_50",
+        # "temperature_250",
+        # "temperature_500",
+        # "temperature_600",
+        # "temperature_700",
+        # "temperature_850",
+        "temperature_925",
+        # "specific_humidity_50",
+        # "specific_humidity_250",
+        # "specific_humidity_500",
+        # "specific_humidity_600",
+        # "specific_humidity_700",
+        # "specific_humidity_850",
+        "specific_humidity_925",
+        # "co_50",
+        # "co_250",
+        # "co_500",
+        # "co_600",
+        # "co_700",
+        # "co_850",
+        "co_925",
+        # "go3_50",
+        # "go3_250",
+        # "go3_500",
+        # "go3_600",
+        # "go3_700",
+        # "go3_850",
+        "go3_925",
+        # "no_50",
+        # "no_250",
+        # "no_500",
+        # "no_600",
+        # "no_700",
+        # "no_850",
+        "no_925",
+        # "no2_50",
+        # "no2_250",
+        # "no2_500",
+        # "no2_600",
+        # "no2_700",
+        # "no2_850",
+        "no2_925",
+        # "so2_50",
+        # "so2_250",
+        # "so2_500",
+        # "so2_600",
+        # "so2_700",
+        # "so2_850",
+        "so2_925",      
+        "pm1",
+        "pm10",
+        "pm2p5",
+        "tcco",
+        "tc_no",
+        "tcno2",
+        "tcso2",
+    ]
+  region: "MENAreg"
+  predict_range: 24
+  hrs_each_step: 1
+  buffer_size: 10000
+  batch_size: 128
+  num_workers: 1
+  pin_memory: False
+  chem_transform: 'log' # takes either 'log' or 'aurora', 'log' is log transformation, 'aurora' is x+log(x)
+
+  # --- multi step rollout parameters ---
+  multi_step_rollout: ${model.multi_step_rollout}
+  k: ${model.k}
