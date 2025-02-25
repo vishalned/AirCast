@@ -34,7 +34,8 @@ pip install -e .
 
 To train the model, run:
 ```bash
-python -u src/climax/regional_forecast/train.py --config configs/regional_forecast_climax_full.yaml
+python -u src/climax/regional_forecast/train.py \
+  --config configs/regional_forecast_climax_full.yaml
 ```
 
 Alternatively, you can run the following command to train the model on the HPC cluster:
