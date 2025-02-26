@@ -1,6 +1,6 @@
 
 # AirCast: Improving Air Pollution Forecasting Through Multi-Variable Data Alignment
-[![Paper](https://img.shields.io/badge/arXiv-2301.10343-blue)]()
+[![Paper](https://img.shields.io/badge/arXiv-2301.10343-blue)](https://arxiv.org/abs/2502.17919v1)
 
 This repository contains code for an adaption of the ClimaX model for Air Quality Forecasting. We follow similar structure as the original ClimaX repository. We start from the climax pre-trained model and fine-tune it on a regional air quality forecasting task (hence the training code and configs are relating to the regional forecast folder).
 
