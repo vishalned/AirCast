@@ -16,6 +16,9 @@ Our paper uses data that is sourced from both WeatherBench (for the weather vari
 
 ❗We are uploading the data somewhere for public use. Stay tuned 
 
+## Model Weights
+❗We are uploading the model weights somewhere for public use. Stay tuned 
+
 
 ## Installation
 To install the requirements, run:
@@ -53,8 +56,14 @@ For details about the original ClimaX model please see the [documentation](https
 If you find this repository useful in your research, please consider citing the following papers:
 
 ```bibtex
-@article{
+@misc{nedungadi2025aircastimprovingairpollution,
+      title={AirCast: Improving Air Pollution Forecasting Through Multi-Variable Data Alignment}, 
+      author={Vishal Nedungadi and Muhammad Akhtar Munir and Marc Rußwurm and Ron Sarafian and Ioannis N. Athanasiadis and Yinon Rudich and Fahad Shahbaz Khan and Salman Khan},
+      year={2025},
+      eprint={2502.17919},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/2502.17919}, 
 }
-
 ```
   
