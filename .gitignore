@@ -7,8 +7,6 @@ single_channel_distributions/
 **/checkpoints/
 *.py[cod]
 *$py.class
-global_forecast/
-regional_forecast/
 visualizations*/
 aircast_data/
 # C extensions
@@ -18,11 +16,9 @@ cams_forecast_global_regrid_test/
 cams_forecast_regrid/
 cams_forecasts_global/
 cams_forecasts_mena/
-climax/
 exp_logs/
 exp_logs_with_lat_reversal/
 exp_logs_without_lat_reversal/
-regional_forecast/
 regional_forecast_with_lat_reversal/
 regional_forecast_without_lat_reversal/
 single_channel_distributions/
